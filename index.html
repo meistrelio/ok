@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculator</title>
+<style>
+  :root {
+    --bg: #f3f3f3;
+    --window: #f9f9f9;
+    --display-bg: #f3f3f3;
+    --btn-bg: #f9f9f9;
+    --btn-hover: #f0f0f0;
+    --btn-active: #e8e8e8;
+    --btn-border: #e0e0e0;
+    --accent-bg: #f0f0f0;
+    --accent-hover: #e6e6e6;
+    --equals-bg: #005fb8;
+    --equals-hover: #1a6fc0;
+    --equals-active: #3a83cc;
+    --text: #1a1a1a;
+    --text-secondary: #5c5c5c;
+    --shadow: 0 8px 32px rgba(0,0,0,.18), 0 2px 8px rgba(0,0,0,.12);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #202020;
+      --window: #202020;
+      --display-bg: #202020;
+      --btn-bg: #2d2d2d;
+      --btn-hover: #353535;
+      --btn-active: #3b3b3b;
+      --btn-border: #3b3b3b;
+      --accent-bg: #2d2d2d;
+      --accent-hover: #353535;
+      --equals-bg: #4cc2ff;
+      --equals-hover: #5ec9ff;
+      --equals-active: #7ed3ff;
+      --text: #ffffff;
+      --text-secondary: #a0a0a0;
+      --shadow: 0 8px 32px rgba(0,0,0,.5), 0 2px 8px rgba(0,0,0,.4);
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+  html, body { height: 100%; }
+  body {
+    font-family: "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+    background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    padding: 16px;
+  }
+  .calculator {
+    width: 340px;
+    height: 560px;
+    background: var(--window);
+    border: 1px solid var(--btn-border);
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .titlebar {
+    display: flex; align-items: center;
+    padding: 0 4px; height: 40px; flex-shrink: 0;
+  }
+  .titlebar .hamburger {
+    width: 44px; height: 36px; border: none; background: transparent;
+    border-radius: 4px; cursor: pointer; color: var(--text);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .titlebar .hamburger:hover { background: var(--btn-hover); }
+  .titlebar .title { font-size: 12px; color: var(--text); margin-left: 4px; }
+  .titlebar .spacer { flex: 1; }
+  .titlebar .win-btn {
+    width: 44px; height: 36px; border: none; background: transparent;
+    color: var(--text); font-size: 10px; cursor: pointer; border-radius: 4px;
+  }
+  .titlebar .win-btn:hover { background: var(--btn-hover); }
+  .titlebar .win-btn.close:hover { background: #c42b1c; color: #fff; }
+
+  .mode-bar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 2px 12px 4px; flex-shrink: 0;
+  }
+  .mode-bar .mode { font-size: 15px; font-weight: 600; color: var(--text); }
+
+  .display {
+    padding: 4px 12px 8px; flex-shrink: 0; background: var(--display-bg);
+  }
+  .expression {
+    min-height: 20px; text-align: right; font-size: 13px;
+    color: var(--text-secondary); overflow-x: auto; white-space: nowrap;
+  }
+  .result {
+    text-align: right; font-size: 46px; font-weight: 600; color: var(--text);
+    line-height: 1.15; overflow-x: auto; white-space: nowrap; padding-bottom: 4px;
+  }
+  .memory-row {
+    display: flex; gap: 2px; padding: 0 8px 4px; flex-shrink: 0;
+  }
+  .memory-row button {
+    flex: 1; height: 30px; border: none; background: transparent;
+    color: var(--text); font-size: 12px; font-family: inherit;
+    cursor: pointer; border-radius: 4px;
+  }
+  .memory-row button:hover { background: var(--btn-hover); }
+  .memory-row button:disabled { color: var(--text-secondary); opacity: .5; cursor: default; background: transparent; }
+
+  .pad {
+    flex: 1; display: grid; padding: 4px 8px 8px; gap: 3px;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(6, 1fr);
+  }
+  .pad button {
+    border: 1px solid var(--btn-border); border-radius: 5px;
+    background: var(--btn-bg); color: var(--text);
+    font-size: 17px; font-family: inherit; cursor: pointer;
+    min-height: 0;
+  }
+  .pad button:hover { background: var(--btn-hover); }
+  .pad button:active { background: var(--btn-active); }
+  .pad button.fn { font-size: 14px; background: var(--accent-bg); color: var(--text); }
+  .pad button.fn:hover { background: var(--accent-hover); }
+  .pad button.equals { background: var(--equals-bg); color: #fff; border-color: transparent; font-size: 22px; }
+  .pad button.equals:hover { background: var(--equals-hover); }
+  .pad button.equals:active { background: var(--equals-active); }
+  .pad button.wide2 { grid-column: span 2; }
+  .pad button.dim { opacity: .4; pointer-events: none; }
+</style>
+</head>
+<body>
+<div class="calculator">
+  <div class="titlebar">
+    <button class="hamburger" title="Open Navigation">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M1.5 3h13v1h-13V3zm0 4.5h13v1h-13v-1zm13 4.5h-13v1h13v-1z"/></svg>
+    </button>
+    <span class="title">Standard</span>
+    <span class="spacer"></span>
+    <button class="win-btn" title="Minimize">&#xE921;</button>
+    <button class="win-btn" title="Maximize">&#xE922;</button>
+    <button class="win-btn close" title="Close">&#xE8BB;</button>
+  </div>
+
+  <div class="mode-bar">
+    <span class="mode">Standard</span>
+  </div>
+
+  <div class="display">
+    <div class="expression" id="expression"></div>
+    <div class="result" id="result">0</div>
+  </div>
+
+  <div class="memory-row">
+    <button data-mem="MC" disabled>MC</button>
+    <button data-mem="MR" disabled>MR</button>
+    <button data-mem="M+">M+</button>
+    <button data-mem="M-">M-</button>
+    <button data-mem="MS">MS</button>
+    <button data-mem="M&#778;" title="Memory">M&#778;</button>
+  </div>
+
+  <div class="pad" id="pad">
+    <button class="fn" data-act="percent">%</button>
+    <button class="fn" data-act="ce">CE</button>
+    <button class="fn" data-act="clear">C</button>
+    <button class="fn" data-act="backspace">&#x232B;</button>
+
+    <button class="fn" data-act="recip">&#185;&#8260;&#8339;</button>
+    <button class="fn" data-act="square">x&#178;</button>
+    <button class="fn" data-act="sqrt">&#8730;x</button>
+    <button class="fn" data-act="divide">&#247;</button>
+
+    <button data-digit="7">7</button>
+    <button data-digit="8">8</button>
+    <button data-digit="9">9</button>
+    <button class="fn" data-act="multiply">&#215;</button>
+
+    <button data-digit="4">4</button>
+    <button data-digit="5">5</button>
+    <button data-digit="6">6</button>
+    <button class="fn" data-act="subtract">&#8722;</button>
+
+    <button data-digit="1">1</button>
+    <button data-digit="2">2</button>
+    <button data-digit="3">3</button>
+    <button class="fn" data-act="add">+</button>
+
+    <button data-act="negate">&#177;</button>
+    <button data-digit="0">0</button>
+    <button data-act="decimal">.</button>
+    <button class="equals" data-act="equals">=</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  const expressionEl = document.getElementById('expression');
+  const resultEl = document.getElementById('result');
+  const memButtons = document.querySelectorAll('.memory-row button');
+
+  let current = '0';
+  let expression = '';
+  let lastOperand = null;
+  let lastOperator = null;
+  let justEvaluated = false;
+  let awaitingOperand = false;
+  let memory = null;
+
+  const fmt = (n) => {
+    if (!isFinite(n)) return 'Cannot divide by zero';
+    const s = parseFloat(n.toPrecision(16));
+    if (Math.abs(s) >= 1e16 || (Math.abs(s) < 1e-10 && s !== 0)) return s.toExponential(10).replace(/e([+-])(\d)$/, 'e$10$2');
+    return String(s);
+  };
+
+  const updateDisplay = () => {
+    resultEl.textContent = current;
+    expressionEl.textContent = expression;
+    memButtons[0].disabled = memButtons[1].disabled = memory === null;
+  };
+
+  const applyOp = (a, b, op) => {
+    switch (op) {
+      case '+': return a + b;
+      case '-': return a - b;
+      case '*': return a * b;
+      case '/': return b === 0 ? NaN : a / b;
+    }
+  };
+
+  const opSymbol = { '+': '+', '-': '\u2212', '*': '\u00d7', '/': '\u00f7' };
+
+  function inputDigit(d) {
+    if (justEvaluated || awaitingOperand) { current = '0'; expression = justEvaluated ? '' : expression; justEvaluated = false; awaitingOperand = false; }
+    if (current === '0') current = d;
+    else if (current.replace('-', '').replace('.', '').length < 16) current += d;
+    updateDisplay();
+  }
+
+  function inputDecimal() {
+    if (justEvaluated || awaitingOperand) { current = '0'; expression = justEvaluated ? '' : expression; justEvaluated = false; awaitingOperand = false; }
+    if (!current.includes('.')) current += '.';
+    updateDisplay();
+  }
+
+  function inputOperator(op) {
+    if (justEvaluated) { justEvaluated = false; }
+    const val = parseFloat(current);
+    if (expression && lastOperator && !expression.endsWith('=')) {
+      const prev = parseFloat(expression.split(' ')[0]);
+      const res = applyOp(prev, val, lastOperator);
+      current = fmt(res);
+    }
+    expression = current + ' ' + opSymbol[op];
+    lastOperator = op;
+    awaitingOperand = true;
+    updateDisplay();
+  }
+
+  function equals() {
+    let a, b, op;
+    if (expression && lastOperator && !justEvaluated) {
+      a = parseFloat(expression.split(' ')[0]);
+      b = parseFloat(current);
+      op = lastOperator;
+      lastOperand = b;
+    } else if (justEvaluated && lastOperator && lastOperand !== null) {
+      a = parseFloat(current);
+      b = lastOperand;
+      op = lastOperator;
+    } else {
+      expression = current + ' =';
+      justEvaluated = true;
+      updateDisplay();
+      return;
+    }
+    const res = applyOp(a, b, op);
+    expression = fmt(a) + ' ' + opSymbol[op] + ' ' + fmt(b) + ' =';
+    current = fmt(res);
+    justEvaluated = true;
+    awaitingOperand = false;
+    updateDisplay();
+  }
+
+  function clearAll() {
+    current = '0'; expression = ''; lastOperator = null; lastOperand = null; justEvaluated = false;
+    updateDisplay();
+  }
+
+  function clearEntry() {
+    current = '0';
+    updateDisplay();
+  }
+
+  function backspace() {
+    if (justEvaluated) { clearAll(); return; }
+    current = current.length > 1 ? current.slice(0, -1) : '0';
+    if (current === '-') current = '0';
+    updateDisplay();
+  }
+
+  function negate() {
+    if (current !== '0') current = current.startsWith('-') ? current.slice(1) : '-' + current;
+    updateDisplay();
+  }
+
+  function unary(fn, label) {
+    const v = parseFloat(current);
+    const r = fn(v);
+    expression = label + '(' + fmt(v) + ')';
+    current = fmt(r);
+    justEvaluated = true;
+    awaitingOperand = false;
+    updateDisplay();
+  }
+
+  function percent() {
+    const v = parseFloat(current);
+    let r = v / 100;
+    if (expression && lastOperator && (lastOperator === '+' || lastOperator === '-')) {
+      r = (parseFloat(expression.split(' ')[0]) * v) / 100;
+    }
+    current = fmt(r);
+    updateDisplay();
+  }
+
+  function memoryAction(action) {
+    const v = parseFloat(current);
+    switch (action) {
+      case 'MC': memory = null; break;
+      case 'MR': if (memory !== null) { current = fmt(memory); justEvaluated = false; } break;
+      case 'M+': memory = (memory || 0) + v; break;
+      case 'M-': memory = (memory || 0) - v; break;
+      case 'MS': memory = v; break;
+    }
+    updateDisplay();
+  }
+
+  const actions = {
+    add: () => inputOperator('+'),
+    subtract: () => inputOperator('-'),
+    multiply: () => inputOperator('*'),
+    divide: () => inputOperator('/'),
+    equals: equals,
+    clear: clearAll,
+    ce: clearEntry,
+    backspace: backspace,
+    negate: negate,
+    decimal: inputDecimal,
+    percent: percent,
+    square: () => unary((v) => v * v, 'sqr'),
+    sqrt: () => unary((v) => Math.sqrt(v), '\u221a'),
+    recip: () => unary((v) => v === 0 ? NaN : 1 / v, '1/'),
+  };
+
+  document.getElementById('pad').addEventListener('click', (e) => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    if (btn.dataset.digit) inputDigit(btn.dataset.digit);
+    else if (btn.dataset.act) actions[btn.dataset.act]();
+  });
+
+  document.querySelector('.memory-row').addEventListener('click', (e) => {
+    const btn = e.target.closest('button');
+    if (!btn || btn.disabled) return;
+    memoryAction(btn.dataset.mem);
+  });
+
+  const keyMap = {
+    '0': () => inputDigit('0'), '1': () => inputDigit('1'), '2': () => inputDigit('2'),
+    '3': () => inputDigit('3'), '4': () => inputDigit('4'), '5': () => inputDigit('5'),
+    '6': () => inputDigit('6'), '7': () => inputDigit('7'), '8': () => inputDigit('8'),
+    '9': () => inputDigit('9'),
+    '.': inputDecimal, ',': inputDecimal,
+    '+': () => inputOperator('+'), '-': () => inputOperator('-'),
+    '*': () => inputOperator('*'), '/': () => inputOperator('/'),
+    'Enter': equals, '=': equals,
+    'Escape': clearAll, 'Delete': clearEntry,
+    'Backspace': backspace, '%': percent, 'F9': negate,
+    'r': () => unary((v) => Math.sqrt(v), '\u221a'),
+    'q': () => unary((v) => v * v, 'sqr'),
+  };
+
+  document.addEventListener('keydown', (e) => {
+    const fn = keyMap[e.key];
+    if (fn) { e.preventDefault(); fn(); }
+  });
+
+  updateDisplay();
+})();
+</script>
+</body>
+</html>
